@@ -6,7 +6,7 @@ conn = mysql.connector.connect(
     host='localhost',
     user='root',
     password='test123',
-    database='stock'
+    database='stock_spark'
 )
 
 if conn.is_connected():
@@ -56,7 +56,7 @@ def create_calendar_table(start_date, end_date):
 
 def main():
     start_date = dt.date(2023, 1, 1)
-    end_date = dt.date(2024, 12, 31)
+    end_date = dt.date(2030, 12, 31)
     create_calendar_table(start_date, end_date)
 
 if __name__ == '__main__':

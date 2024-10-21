@@ -1,8 +1,9 @@
 # snapShotConfig.py
 
-def get_sql_queries():
-    return [
+# def get_sql_queries():
+#     return [
 #         """
+# INSERT INTO trans (date, member_id, symbol, action, qty, close)
 # WITH FirstLastTransactionDates AS (
 #     -- Get the first and last transaction dates for each member_id and symbol combination
 #     SELECT
@@ -61,110 +62,71 @@ def get_sql_queries():
 #     PriceData
 # ORDER BY
 #     member_id, symbol, transaction_date;
-
-        """
-SET @prev_member_id = NULL;
-        """,
-        """
-SET @prev_symbol = NULL;
-        """,
-        """
-SET @running_qty = 0;
-        """,
-        """
-
-UPDATE trans AS yt
-JOIN (
-    SELECT
-        MEMBER_ID,
-        SYMBOL,
-        DATE,
-        ACTION,
-        QTY,
-        -- Calculate the cumulative remaining quantity
-        @running_qty := CASE
-            WHEN @prev_member_id = MEMBER_ID AND @prev_symbol = SYMBOL THEN
-                CASE
-                    WHEN ACTION = 'BUY' THEN @running_qty + QTY  -- Increase running quantity on BUY
-                    WHEN ACTION = 'SELL' THEN GREATEST(@running_qty - QTY, 0)  -- Decrease on SELL, but don't go below 0
-                END
-            ELSE
-                CASE
-                    WHEN ACTION = 'BUY' THEN QTY  -- If new member_id and symbol, start with the BUY quantity
-                    WHEN ACTION = 'SELL' THEN 0    -- Start with 0 for SELL, since no remaining quantity exists
-                END
-        END AS REMAINING_QTY,
-        -- Update tracking variables for the next iteration
-        @prev_member_id := MEMBER_ID,
-        @prev_symbol := SYMBOL
-    FROM trans
-    ORDER BY MEMBER_ID, SYMBOL, DATE
-) AS calculated
-ON yt.MEMBER_ID = calculated.MEMBER_ID AND yt.SYMBOL = calculated.SYMBOL AND yt.DATE = calculated.DATE
-SET yt.REMAINING_QTY = calculated.REMAINING_QTY;
-
-        """,
-        """
-        WITH cumulative_data AS (
-            SELECT
-                MEMBER_ID,
-                SYMBOL,
-                `DATE`,
-                SUM(CASE WHEN ACTION = 'BUY' THEN ABS(QTY) ELSE 0 END)
-                    OVER (PARTITION BY MEMBER_ID, SYMBOL ORDER BY `DATE`) AS total_buy_qty,
-                SUM(CASE WHEN ACTION = 'SELL' THEN ABS(QTY) ELSE 0 END)
-                    OVER (PARTITION BY MEMBER_ID, SYMBOL ORDER BY `DATE`) AS total_sell_qty
-            FROM trans
-        )
-        UPDATE trans AS t
-        JOIN cumulative_data AS c
-        ON t.MEMBER_ID = c.MEMBER_ID AND t.SYMBOL = c.SYMBOL AND t.`DATE` = c.`DATE`
-        SET t.total_buy_qty = c.total_buy_qty,
-            t.total_sell_qty = c.total_sell_qty;
-        """,
-        """
-        UPDATE trans
-        SET current_price = remaining_qty * CLOSE
-        WHERE current_price IS NULL;
-        """,
-        """
-        WITH cumulative_investment AS (
-            SELECT MEMBER_ID, SYMBOL, `DATE`,
-                   SUM(CASE
-                           WHEN ACTION = 'BUY' THEN qty * CLOSE
-                           ELSE 0
-                       END) OVER (PARTITION BY MEMBER_ID, SYMBOL ORDER BY `DATE`) AS total_investment,
-                   SUM(CASE
-                           WHEN ACTION = 'SELL' THEN ABS(QTY) * CLOSE
-                           ELSE 0
-                       END) OVER (PARTITION BY MEMBER_ID, SYMBOL ORDER BY `DATE`) AS total_sell
-            FROM trans
-        )
-        UPDATE trans AS t
-        JOIN cumulative_investment ci
-        ON t.MEMBER_ID = ci.MEMBER_ID AND t.SYMBOL = ci.SYMBOL AND t.`DATE` = ci.`DATE`
-        SET t.total_investment = ci.total_investment,
-            t.total_sell = ci.total_sell;
-        """,
-        """
-        UPDATE trans
-        SET average_price =
-            CASE
-                WHEN (total_buy_qty - total_sell_qty) > 0 THEN
-                    (total_investment ) / (total_buy_qty)
-                ELSE 0
-            END;
-        """,
-        """
-        UPDATE trans
-        SET current_investment = remaining_qty * average_price,
-        profit = CASE
-                    WHEN current_price - (total_investment - total_sell) < 0
-                    THEN -ABS(current_price - (total_investment - total_sell))
-                    ELSE current_price - (total_investment - total_sell)
-                 END;
-        """
-    ]
+#
+#     """
+# ]
+#         """,
+#         """
+#         WITH cumulative_data AS (
+#             SELECT
+#                 MEMBER_ID,
+#                 SYMBOL,
+#                 `DATE`,
+#                 SUM(CASE WHEN ACTION = 'BUY' THEN ABS(QTY) ELSE 0 END)
+#                     OVER (PARTITION BY MEMBER_ID, SYMBOL ORDER BY `DATE`) AS total_buy_qty,
+#                 SUM(CASE WHEN ACTION = 'SELL' THEN ABS(QTY) ELSE 0 END)
+#                     OVER (PARTITION BY MEMBER_ID, SYMBOL ORDER BY `DATE`) AS total_sell_qty
+#             FROM trans
+#         )
+#         UPDATE trans AS t
+#         JOIN cumulative_data AS c
+#         ON t.MEMBER_ID = c.MEMBER_ID AND t.SYMBOL = c.SYMBOL AND t.`DATE` = c.`DATE`
+#         SET t.total_buy_qty = c.total_buy_qty,
+#             t.total_sell_qty = c.total_sell_qty;
+#         """,
+#         """
+#         UPDATE trans
+#         SET current_price = remaining_qty * CLOSE
+#         WHERE current_price IS NULL;
+#         """,
+#         """
+#         WITH cumulative_investment AS (
+#             SELECT MEMBER_ID, SYMBOL, `DATE`,
+#                    SUM(CASE
+#                            WHEN ACTION = 'BUY' THEN qty * CLOSE
+#                            ELSE 0
+#                        END) OVER (PARTITION BY MEMBER_ID, SYMBOL ORDER BY `DATE`) AS total_investment,
+#                    SUM(CASE
+#                            WHEN ACTION = 'SELL' THEN ABS(QTY) * CLOSE
+#                            ELSE 0
+#                        END) OVER (PARTITION BY MEMBER_ID, SYMBOL ORDER BY `DATE`) AS total_sell
+#             FROM trans
+#         )
+#         UPDATE trans AS t
+#         JOIN cumulative_investment ci
+#         ON t.MEMBER_ID = ci.MEMBER_ID AND t.SYMBOL = ci.SYMBOL AND t.`DATE` = ci.`DATE`
+#         SET t.total_investment = ci.total_investment,
+#             t.total_sell = ci.total_sell;
+#         """,
+#         """
+#         UPDATE trans
+#         SET average_price =
+#             CASE
+#                 WHEN (total_buy_qty - total_sell_qty) > 0 THEN
+#                     (total_investment ) / (total_buy_qty)
+#                 ELSE 0
+#             END;
+#         """,
+#         """
+#         UPDATE trans
+#         SET current_investment = remaining_qty * average_price,
+#         profit = CASE
+#                     WHEN current_price - (total_investment - total_sell) < 0
+#                     THEN -ABS(current_price - (total_investment - total_sell))
+#                     ELSE current_price - (total_investment - total_sell)
+#                  END;
+#         """
+#     ]
 #         """
 #         WITH cte1 AS (
 #     SELECT

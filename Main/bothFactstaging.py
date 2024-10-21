@@ -46,7 +46,7 @@ def create_dataframes(start_date: str, end_date: str):
 
     stock_data_df = pd.DataFrame(records, columns=['DATE', 'SYMBOL', 'OPEN', 'HIGH', 'LOW', 'CLOSE', 'VOLUME', 'TURNOVER_Cr', 'DIVIDENDS', 'STOCK_SPLITS'])
 
-    symbol_data = pd.read_csv(r'/STOCK/Dirfiles/symbol_dimension.csv')
+    symbol_data = pd.read_csv(r'C:\Users\Hp\PycharmProjects\STOCK\STOCK\AllCsvs\symbol_dimension.csv')
 
     merged_df = pd.merge(symbol_data, stock_data_df, on='SYMBOL', how='inner')
 
@@ -58,7 +58,7 @@ def create_dataframes(start_date: str, end_date: str):
     valid_data_df = merged_df[merged_df['DATE'].isin(trading_days)]
 
     staging_df = valid_data_df[['SYMBOL_ID', 'DATE', 'SYMBOL', 'OPEN', 'HIGH', 'LOW', 'CLOSE', 'VOLUME', 'DIVIDENDS', 'STOCK_SPLITS', 'TURNOVER_Cr']]
-    fact_df = valid_data_df[['SYMBOL_ID', 'DATE', 'SYMBOL', 'SERIES', 'OPEN', 'HIGH', 'LOW', 'CLOSE']]
+    fact_df = valid_data_df[['SYMBOL_ID', 'DATE', 'SYMBOL', 'OPEN', 'HIGH', 'LOW', 'CLOSE']]
 
     return fact_df, staging_df
 
@@ -92,7 +92,7 @@ def main(start_date: str):
         end_date = today_date
 
     global symbols_list
-    nse_symbols = pd.read_csv(r'/STOCK/Dirfiles/symbol_dimension.csv')
+    nse_symbols = pd.read_csv(r'C:\Users\Hp\PycharmProjects\STOCK\STOCK\AllCsvs\symbol_dimension.csv')
     symbols_list = nse_symbols['SYMBOL'].to_list()
 
     save_to_sql(start_date, end_date)
